@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('评估单新增')"/>
+</head>
+<body>
+<form class="layui-form">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">评估单号</label>
+                <div class="layui-input-block">
+                    <input type="text" name="effectNo" lay-verify="required" autocomplete="off" placeholder="如 PE-20260915-001" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">测报点</label>
+                <div class="layui-input-block">
+                    <select name="stationId" lay-verify="required" lay-filter="stationId">
+                        <option value="">请选择测报点</option>
+                        <option th:each="s : ${stations}"
+                                th:value="${s.id}"
+                                th:text="${s.stationCode + ' / ' + s.stationName}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">防治作业单</label>
+                <div class="layui-input-block">
+                    <select name="sprayNo" lay-verify="required" lay-filter="sprayNo">
+                        <option value="">请选择已完结的防治作业单</option>
+                        <option th:each="sp : ${sprays}"
+                                th:value="${sp.sprayNo}"
+                                th:text="${sp.sprayNo + ' / ' + (sp.pesticideName == null ? '' : sp.pesticideName)}"></option>
+                    </select>
+                </div>
+                <div class="layui-form-mid layui-word-aux">只有已完结（药液已用完）的作业单才能评估，同一作业单只允许评估一次</div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">防治前虫量</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="beforeCount" min="1" lay-verify="required" autocomplete="off" placeholder="头/百株" class="layui-input">
+                </div>
+                <div class="layui-form-mid layui-word-aux">为0无法计算减退率，不许登记</div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">防治后虫量</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="afterCount" min="0" lay-verify="required" autocomplete="off" placeholder="头/百株" class="layui-input">
+                </div>
+                <div class="layui-form-mid layui-word-aux">虫口减退率由系统计算：<b id="rate-preview">填写前后虫量后预览</b></div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">评估日期</label>
+                <div class="layui-input-block">
+                    <input type="text" name="assessDate" id="assessDate" lay-verify="required" autocomplete="off" placeholder="请选择评估日期" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">评估人</label>
+                <div class="layui-input-block">
+                    <input type="text" name="assessBy" lay-verify="required" autocomplete="off" placeholder="请输入评估人" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" placeholder="请输入备注" class="layui-textarea"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit="" lay-filter="effect-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['form', 'jquery', 'laydate'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        let laydate = layui.laydate;
+        let MODULE_PATH = rootPath + "/PestEffectController";
+
+        laydate.render({
+            elem: '#assessDate',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm:ss'
+        });
+
+        // 减退率实时预览，仅用于录入提示，最终以系统保存时计算为准
+        function refreshPreview() {
+            let before = parseFloat($("input[name='beforeCount']").val());
+            let after = parseFloat($("input[name='afterCount']").val());
+            if (isNaN(before) || isNaN(after)) {
+                $('#rate-preview').text('填写前后虫量后预览');
+                return;
+            }
+            if (before <= 0) {
+                $('#rate-preview').text('防治前虫量为0，无法计算');
+                return;
+            }
+            let rate = (before - after) / before * 100;
+            let text = rate.toFixed(2) + '%';
+            $('#rate-preview').text(rate < 0 ? text + '（虫量不降反升，将标为异常）' : text);
+        }
+
+        $("input[name='beforeCount'],input[name='afterCount']").on('input propertychange', refreshPreview);
+
+        form.on('submit(effect-save)', function (data) {
+            $.ajax({
+                url: MODULE_PATH + '/add',
+                data: data.field,
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    if (result.code == 200) {
+                        layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload("effect-table");
+                        });
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 1500});
+                    }
+                }
+            })
+            return false;
+        });
+    })
+</script>
+</body>
+</html>

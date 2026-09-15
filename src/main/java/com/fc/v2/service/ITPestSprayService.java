@@ -16,8 +16,14 @@ public interface ITPestSprayService {
     /** 按主键查询 */
     TPestSpray selectTPestSprayById(Long id);
 
+    /** 按配制单号查询（评估单按作业单号关联） */
+    TPestSpray selectTPestSprayBySprayNo(String sprayNo);
+
     /** 按条件查询列表（分页由调用方统一处理） */
     List<TPestSpray> selectTPestSprayList(Wrapper<TPestSpray> queryWrapper);
+
+    /** 已完结（已用完）的防治作业单：评估单只能挂这类作业单 */
+    List<TPestSpray> selectFinishedSprayList();
 
     /** 新增 */
     int insertTPestSpray(TPestSpray record);

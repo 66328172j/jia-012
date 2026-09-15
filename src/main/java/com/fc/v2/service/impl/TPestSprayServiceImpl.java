@@ -47,6 +47,27 @@ public class TPestSprayServiceImpl extends ServiceImpl<TPestSprayMapper, TPestSp
     }
 
     @Override
+    public TPestSpray selectTPestSprayBySprayNo(String sprayNo) {
+        if (StringUtils.isEmpty(sprayNo)) {
+            return null;
+        }
+        return this.baseMapper.selectOne(new QueryWrapper<TPestSpray>()
+                .eq("spray_no", sprayNo)
+                .eq("del_flag", 0));
+    }
+
+    /**
+     * 已完结（已用完）的防治作业单：药液喷完即作业完结归档，效果评估只能挂这类作业单
+     */
+    @Override
+    public List<TPestSpray> selectFinishedSprayList() {
+        return this.baseMapper.selectList(new QueryWrapper<TPestSpray>()
+                .eq("del_flag", 0)
+                .eq("spray_status", 1)
+                .orderByAsc("id"));
+    }
+
+    @Override
     public int insertTPestSpray(TPestSpray record) {
         if (record == null) {
             return 0;

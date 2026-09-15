@@ -30,4 +30,16 @@ public interface ITPestEffectService {
 
     /** 按主键删除 */
     int deleteTPestEffectById(Long id);
+
+    /** 评估单号唯一校验（排除自身，只统计正常记录） */
+    int checkEffectNoUnique(TPestEffect record);
+
+    /** 同一防治作业单只允许一张评估单（排除自身，只统计正常记录） */
+    int checkSprayNoUnique(TPestEffect record);
+
+    /** 评估动作：待评估 -> 已评估 */
+    int evaluateTPestEffect(Long id);
+
+    /** 归档动作：已评估 -> 已归档；虫口减退率为负的异常单不许归档 */
+    int archiveTPestEffect(Long id);
 }

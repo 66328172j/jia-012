@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('防治效果评估台账')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">评估单号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="effectNo" placeholder="请输入评估单号关键字" class="layui-input">
+                </div>
+                <label class="layui-form-label">测报点编号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="stationCode" placeholder="请输入测报点编号关键字" class="layui-input">
+                </div>
+                <label class="layui-form-label">评估状态</label>
+                <div class="layui-input-inline">
+                    <select name="effectStatus" class="layui-input">
+                        <option value="">全部</option>
+                        <option value="0">待评估</option>
+                        <option value="1">已评估</option>
+                        <option value="2">已归档</option>
+                    </select>
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="effect-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="effect-table" lay-filter="effect-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="effect-toolbar">
+    <button shiro:hasPermission="pest:pestEffect:add" class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新增
+    </button>
+    <button shiro:hasPermission="pest:pestEffect:remove" class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove">
+        <i class="layui-icon layui-icon-delete"></i>
+        删除
+    </button>
+</script>
+
+<script type="text/html" id="effect-bar">
+    {{# if(d.effectStatus == 0){ }}
+    <button shiro:hasPermission="pest:pestEffect:evaluate" class="pear-btn pear-btn-warming pear-btn-sm" lay-event="evaluate" title="评估">
+        <i class="layui-icon layui-icon-ok-circle"></i>
+    </button>
+    {{# } }}
+    {{# if(d.effectStatus == 1 && (d.reduceRate == null || d.reduceRate >= 0)){ }}
+    <button shiro:hasPermission="pest:pestEffect:archive" class="pear-btn pear-btn-normal pear-btn-sm" lay-event="archive" title="归档">
+        <i class="layui-icon layui-icon-file"></i>
+    </button>
+    {{# } }}
+    {{# if(d.effectStatus != 2){ }}
+    <button shiro:hasPermission="pest:pestEffect:edit" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit" title="修改">
+        <i class="layui-icon layui-icon-edit"></i>
+    </button>
+    <button shiro:hasPermission="pest:pestEffect:remove" class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove" title="删除">
+        <i class="layui-icon layui-icon-delete"></i>
+    </button>
+    {{# } }}
+</script>
+
+<script type="text/html" id="reduce-rate-tpl">
+    {{# if(d.reduceRate == null){ }}
+    <span class="layui-badge layui-bg-gray">未算</span>
+    {{# } else if(d.reduceRate < 0){ }}
+    <span class="layui-badge layui-bg-red">异常 {{d.reduceRate}}%</span>
+    {{# } else { }}
+    {{d.reduceRate}}%
+    {{# } }}
+</script>
+
+<script type="text/html" id="effect-status-tpl">
+    {{# if(d.effectStatus == 2){ }}
+    <span class="layui-badge layui-bg-green">已归档</span>
+    {{# } else if(d.effectStatus == 1){ }}
+    <span class="layui-badge layui-bg-blue">已评估</span>
+    {{# } else { }}
+    <span class="layui-badge layui-bg-orange">待评估</span>
+    {{# } }}
+</script>
+
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['table', 'form', 'jquery'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+
+        let MODULE_PATH = rootPath + "/PestEffectController/";
+        let cols = [
+            [
+                {type: 'checkbox'},
+                {title: 'ID', field: 'id', align: 'center', hide: true},
+                {title: '评估单号', field: 'effectNo', align: 'center', width: 150},
+                {title: '测报点编号', field: 'stationCode', align: 'center', width: 120},
+                {title: '防治作业单号', field: 'sprayNo', align: 'center', width: 140},
+                {title: '防治前虫量', field: 'beforeCount', align: 'center', width: 110},
+                {title: '防治后虫量', field: 'afterCount', align: 'center', width: 110},
+                {title: '虫口减退率', field: 'reduceRate', align: 'center', width: 130, templet: '#reduce-rate-tpl'},
+                {title: '评估日期', field: 'assessDate', align: 'center', width: 170},
+                {title: '评估人', field: 'assessBy', align: 'center', width: 100},
+                {title: '评估状态', field: 'effectStatus', align: 'center', width: 100, templet: '#effect-status-tpl'},
+                {title: '备注', field: 'remark', align: 'center'},
+                {title: '操作', toolbar: '#effect-bar', align: 'center', width: 160}
+            ]
+        ];
+
+        table.render({
+            elem: '#effect-table',
+            url: MODULE_PATH + 'list',
+            page: true,
+            cols: cols,
+            skin: 'line',
+            toolbar: '#effect-toolbar',
+            defaultToolbar: [{
+                layEvent: 'refresh',
+                icon: 'layui-icon-refresh',
+            }, 'filter', 'print', 'exports']
+        });
+
+        table.on('tool(effect-table)', function (obj) {
+            if (obj.event === 'remove') {
+                window.remove(obj);
+            } else if (obj.event === 'edit') {
+                window.edit(obj);
+            } else if (obj.event === 'evaluate') {
+                window.evaluate(obj);
+            } else if (obj.event === 'archive') {
+                window.archive(obj);
+            }
+        });
+
+        table.on('toolbar(effect-table)', function (obj) {
+            if (obj.event === 'add') {
+                window.add();
+            } else if (obj.event === 'refresh') {
+                window.refresh();
+            } else if (obj.event === 'batchRemove') {
+                window.batchRemove(obj);
+            }
+        });
+
+        form.on('submit(effect-query)', function (data) {
+            table.reload('effect-table', {where: data.field, page: {curr: 1}});
+            return false;
+        });
+
+        window.add = function () {
+            layer.open({
+                type: 2,
+                title: '新增评估单',
+                shade: 0.1,
+                area: ['640px', '680px'],
+                content: MODULE_PATH + 'add'
+            });
+        }
+
+        window.edit = function (obj) {
+            layer.open({
+                type: 2,
+                title: '修改评估单',
+                shade: 0.1,
+                area: ['640px', '680px'],
+                content: MODULE_PATH + 'edit/' + obj.data['id']
+            });
+        }
+
+        // 评估：待评估 -> 已评估
+        window.evaluate = function (obj) {
+            layer.confirm('确定该评估单评估完成吗？', {icon: 3, title: '提示'}, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: MODULE_PATH + "evaluate",
+                    data: {id: obj.data['id']},
+                    dataType: 'json',
+                    type: 'put',
+                    success: function (result) {
+                        layer.close(loading);
+                        if (result.code == 200) {
+                            layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                                table.reload('effect-table');
+                            });
+                        } else {
+                            layer.msg(result.msg, {icon: 2, time: 1500});
+                        }
+                    }
+                })
+            });
+        }
+
+        // 归档：已评估 -> 已归档；减退率为负的异常单服务端会拒绝
+        window.archive = function (obj) {
+            layer.confirm('归档后评估单将锁定不能再改，确定归档吗？', {icon: 3, title: '提示'}, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: MODULE_PATH + "archive",
+                    data: {id: obj.data['id']},
+                    dataType: 'json',
+                    type: 'put',
+                    success: function (result) {
+                        layer.close(loading);
+                        if (result.code == 200) {
+                            layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                                table.reload('effect-table');
+                            });
+                        } else {
+                            layer.msg(result.msg, {icon: 2, time: 1500});
+                        }
+                    }
+                })
+            });
+        }
+
+        window.remove = function (obj) {
+            layer.confirm('确定要删除该评估单吗？', {icon: 3, title: '提示'}, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: MODULE_PATH + "remove?ids=" + obj.data['id'],
+                    dataType: 'json',
+                    type: 'delete',
+                    success: function (result) {
+                        layer.close(loading);
+                        if (result.code == 200) {
+                            layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                                obj.del();
+                            });
+                        } else {
+                            layer.msg(result.msg, {icon: 2, time: 1000});
+                        }
+                    }
+                })
+            });
+        }
+
+        window.batchRemove = function (obj) {
+            let data = table.checkStatus(obj.config.id).data;
+            if (data.length === 0) {
+                layer.msg("未选中数据", {icon: 3, time: 1000});
+                return false;
+            }
+            let ids = "";
+            for (let i = 0; i < data.length; i++) {
+                ids += data[i].id + ",";
+            }
+            ids = ids.substr(0, ids.length - 1);
+            layer.confirm('确定要删除这些评估单吗？', {icon: 3, title: '提示'}, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: MODULE_PATH + "remove?ids=" + ids,
+                    dataType: 'json',
+                    type: 'delete',
+                    success: function (result) {
+                        layer.close(loading);
+                        if (result.code == 200) {
+                            layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                                table.reload('effect-table');
+                            });
+                        } else {
+                            layer.msg(result.msg, {icon: 2, time: 1000});
+                        }
+                    }
+                })
+            });
+        }
+
+        window.refresh = function () {
+            table.reload('effect-table');
+        }
+    })
+</script>
+</html>
