@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('调查记录新增')"/>
+</head>
+<body>
+<form class="layui-form">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">调查单号</label>
+                <div class="layui-input-block">
+                    <input type="text" name="surveyNo" lay-verify="required" autocomplete="off" placeholder="如 DC-20260915-001" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">测报点</label>
+                <div class="layui-input-block">
+                    <select name="stationId" lay-verify="required" lay-filter="stationId">
+                        <option value="">请选择测报点</option>
+                        <option th:each="s : ${stations}"
+                                th:value="${s.id}"
+                                th:text="${s.stationCode + ' / ' + s.stationName}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">分级规则</label>
+                <div class="layui-input-block">
+                    <select name="ruleId" lay-verify="required" lay-filter="ruleId">
+                        <option value="">请选择发生程度分级规则</option>
+                        <option th:each="r : ${rules}"
+                                th:value="${r.id}"
+                                th:attr="data-d1=${r.dev1Max},data-d2=${r.dev2Max},data-d3=${r.dev3Max}"
+                                th:text="${r.ruleCode + ' / ' + r.ruleName}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">病株率(%)</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="surveyRate" step="0.01" min="0" max="100" lay-verify="required" autocomplete="off" placeholder="田间调查病株率" class="layui-input">
+                </div>
+                <div class="layui-form-mid layui-word-aux">发生程度由系统按所选规则判定：<b id="level-preview">选择规则并填写病株率后预览</b></div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">调查日期</label>
+                <div class="layui-input-block">
+                    <input type="text" name="surveyDate" id="surveyDate" lay-verify="required" autocomplete="off" placeholder="请选择调查日期" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">调查人</label>
+                <div class="layui-input-block">
+                    <input type="text" name="surveyBy" lay-verify="required" autocomplete="off" placeholder="请输入调查人" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" placeholder="请输入备注" class="layui-textarea"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit="" lay-filter="survey-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['form', 'jquery', 'laydate'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        let laydate = layui.laydate;
+        let MODULE_PATH = rootPath + "/PestSurveyController";
+
+        laydate.render({
+            elem: '#surveyDate',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm:ss'
+        });
+
+        // 发生程度实时预览，仅用于录入提示，最终以系统保存时判定为准
+        function refreshPreview() {
+            let $opt = $("select[name='ruleId'] option:selected");
+            let rate = parseFloat($("input[name='surveyRate']").val());
+            let d1 = parseFloat($opt.attr('data-d1'));
+            let d2 = parseFloat($opt.attr('data-d2'));
+            let d3 = parseFloat($opt.attr('data-d3'));
+            if (isNaN(rate) || isNaN(d1) || isNaN(d2) || isNaN(d3)) {
+                $('#level-preview').text('选择规则并填写病株率后预览');
+                return;
+            }
+            let level = rate < d1 ? '轻' : (rate < d2 ? '中' : (rate < d3 ? '重' : '大发生'));
+            $('#level-preview').text(level);
+        }
+
+        form.on('select(ruleId)', refreshPreview);
+        $("input[name='surveyRate']").on('input propertychange', refreshPreview);
+
+        form.on('submit(survey-save)', function (data) {
+            $.ajax({
+                url: MODULE_PATH + '/add',
+                data: data.field,
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    if (result.code == 200) {
+                        layer.msg(result.msg, {icon: 1, time: 1000}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload("survey-table");
+                        });
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 1500});
+                    }
+                }
+            })
+            return false;
+        });
+    })
+</script>
+</body>
+</html>

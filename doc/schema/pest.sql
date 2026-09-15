@@ -250,3 +250,38 @@ VALUES (1, 'PG-01', '病虫发生程度分级规则', 5.00, 10.00, 15.00, 0, 0, 
 INSERT INTO t_pest_forecast (id, forecast_no, station_id, station_code, pest_name, forecast_date, valid_date, remain_days, forecast_by, forecast_status, del_flag, create_by, create_time)
 VALUES (1, 'FC-0001', 1, 'PS-0001', '稻飞虱', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL 7 DAY), 7, '张测报', 1, 0, 'sys', NOW()),
        (2, 'FC-0002', 1, 'PS-0001', '稻纵卷叶螟', DATE_SUB(NOW(), INTERVAL 30 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 0, '李测报', 2, 0, 'sys', NOW());
+
+-- ----------------------------
+-- 菜单与权限（jia-012：分级规则维护 + 病虫发生调查台账）
+-- 目录：病虫害测报；管理员角色 488243256161730560 全量授权
+-- ----------------------------
+INSERT INTO `t_sys_permission` VALUES (7100100000000001000, '病虫害测报', '病虫害测报目录', '', 0, 0, '', 0, 'layui-icon layui-icon-template-1', 10, 0, 'admin', NOW(), NULL, NULL, NULL);
+
+-- 发生程度分级规则
+INSERT INTO `t_sys_permission` VALUES (7100100000000001010, '分级规则', '分级规则展示', '/PestRuleController/view', 0, 7100100000000001000, 'pest:pestRule:view', 1, 'layui-icon layui-icon-set', 1, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001011, '分级规则集合', '分级规则集合', '/PestRuleController/list', 0, 7100100000000001010, 'pest:pestRule:list', 2, '', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001012, '分级规则添加', '分级规则添加', '/PestRuleController/add', 0, 7100100000000001010, 'pest:pestRule:add', 2, 'layui-icon layui-icon-add-1', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001013, '分级规则修改', '分级规则修改（含启用停用）', '/PestRuleController/edit', 0, 7100100000000001010, 'pest:pestRule:edit', 2, 'layui-icon layui-icon-edit', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001014, '分级规则删除', '分级规则删除', '/PestRuleController/remove', 0, 7100100000000001010, 'pest:pestRule:remove', 2, 'layui-icon layui-icon-delete', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+
+-- 病虫发生调查台账
+INSERT INTO `t_sys_permission` VALUES (7100100000000001020, '发生调查', '病虫发生调查展示', '/PestSurveyController/view', 0, 7100100000000001000, 'pest:pestSurvey:view', 1, 'layui-icon layui-icon-note', 2, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001021, '调查记录集合', '调查记录集合', '/PestSurveyController/list', 0, 7100100000000001020, 'pest:pestSurvey:list', 2, '', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001022, '调查记录添加', '调查记录添加', '/PestSurveyController/add', 0, 7100100000000001020, 'pest:pestSurvey:add', 2, 'layui-icon layui-icon-add-1', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001023, '调查记录修改', '调查记录修改', '/PestSurveyController/edit', 0, 7100100000000001020, 'pest:pestSurvey:edit', 2, 'layui-icon layui-icon-edit', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001024, '调查记录复核', '调查记录复核', '/PestSurveyController/review', 0, 7100100000000001020, 'pest:pestSurvey:review', 2, 'layui-icon layui-icon-ok-circle', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission` VALUES (7100100000000001025, '调查记录删除', '调查记录删除', '/PestSurveyController/remove', 0, 7100100000000001020, 'pest:pestSurvey:remove', 2, 'layui-icon layui-icon-delete', NULL, 0, 'admin', NOW(), NULL, NULL, NULL);
+
+-- 管理员角色授权
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001100, 488243256161730560, 7100100000000001000, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001110, 488243256161730560, 7100100000000001010, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001111, 488243256161730560, 7100100000000001011, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001112, 488243256161730560, 7100100000000001012, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001113, 488243256161730560, 7100100000000001013, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001114, 488243256161730560, 7100100000000001014, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001120, 488243256161730560, 7100100000000001020, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001121, 488243256161730560, 7100100000000001021, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001122, 488243256161730560, 7100100000000001022, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001123, 488243256161730560, 7100100000000001023, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001124, 488243256161730560, 7100100000000001024, 'admin', NOW(), NULL, NULL, NULL);
+INSERT INTO `t_sys_permission_role` VALUES (7100100000000001125, 488243256161730560, 7100100000000001025, 'admin', NOW(), NULL, NULL, NULL);
